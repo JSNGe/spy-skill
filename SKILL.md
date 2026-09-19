@@ -1,6 +1,6 @@
 ---
 name: spy
-description: "Instant competitive hook intelligence — scrape any Instagram accounts, find their viral outliers, transcribe the hooks, and get proven templates you can steal."
+description: "Analyze 2–10 specified Instagram competitor accounts, find recent view outliers, transcribe their hooks, and produce reusable hook templates and a leaderboard. Use when the user asks for competitor Reel research or invokes $spy."
 ---
 
 # /spy
@@ -8,18 +8,23 @@ description: "Instant competitive hook intelligence — scrape any Instagram acc
 Instant competitive hook intelligence. Give it Instagram handles — it scrapes their content, finds viral outliers, transcribes the hooks, templatizes them, and shows you exactly what's working in any niche. Zero setup, no database required.
 
 ## Usage
-`/spy @handle1 @handle2 @handle3`
-`/spy https://www.instagram.com/handle1/ https://www.instagram.com/handle2/`
+`$spy @handle1 @handle2 @handle3`
+`$spy https://www.instagram.com/handle1/ https://www.instagram.com/handle2/`
+
+In Claude Code the original `/spy` form remains valid. In Codex, prefer `$spy` or a natural-language
+request that clearly names the competitor accounts.
 
 Examples:
-- `/spy @hormozi @garyvee @danmartell`
-- `/spy @levelsio @marc_louvion @yaboroda_`
+- `$spy @hormozi @garyvee @danmartell`
+- `$spy @levelsio @marc_louvion @yaboroda_`
 
 Minimum 2 handles, maximum 10.
 
 ## Step 0 — First-Time Setup
 
-Check if config exists at `~/.claude/skills/spy/config.json`.
+Resolve the skill directory from this `SKILL.md`. In Codex it is normally
+`~/.codex/skills/spy`; in Claude Code it is normally `~/.claude/skills/spy`.
+Check for `config.json` inside that resolved skill directory.
 
 **If config exists:** Load tool paths from it. Skip to Step 1.
 
@@ -29,27 +34,31 @@ Check if config exists at `~/.claude/skills/spy/config.json`.
 Welcome to /spy! Let me check your tools real quick. This only happens once.
 ```
 
-### Check Apify MCP
-Try calling `mcp__apify__search-actors` with query "instagram". 
+### Check Apify access
+
+Check the tools available in the current agent environment for an Apify connector/MCP. Tool names
+vary between hosts; do not assume the Claude-specific `mcp__apify__search-actors` name exists.
+If an Apify search or actor-running tool is available, use it to locate `apify/instagram-scraper`.
+
 - If it works: "Apify connected."
-- If it fails:
+- If it is unavailable:
   ```
   Apify is not connected. To set it up:
   1. Create a free account at https://apify.com
   2. Go to Settings → Integrations and copy your API token
-  3. Exit Claude Code (type /exit)
-  4. Run: claude mcp add apify -- npx -y @anthropic-ai/apify-mcp-server
-  5. When prompted, paste your API token
-  6. Reopen Claude Code and run /spy again
+  3. Connect an Apify MCP/connector in your Codex or Claude environment
+  4. Store the token in that connector or an APIFY_TOKEN environment variable — never in this
+     repository, config.json, a report, or chat
+  5. Start a new agent turn and invoke $spy again
   ```
   Stop here until Apify is connected.
 
 ### Check CLI Tools
 
 ```bash
-YT_DLP=$(which yt-dlp 2>/dev/null)
-WHISPER=$(which whisper 2>/dev/null)
-FFMPEG=$(which ffmpeg 2>/dev/null)
+YT_DLP=$(command -v yt-dlp 2>/dev/null)
+WHISPER=$(command -v whisper 2>/dev/null)
+FFMPEG=$(command -v ffmpeg 2>/dev/null)
 ```
 
 For each missing tool:
@@ -73,7 +82,7 @@ Stop here until all tools are installed.
 }
 ```
 
-Then proceed.
+Never store the Apify token in this file. Then proceed.
 
 ---
 
@@ -121,21 +130,25 @@ Total outliers to process: 15
 
 For each outlier, in order of views (highest first). Max 20 outliers.
 
+Create one isolated temporary directory for the run and keep every downloaded/transcribed file
+inside it. On macOS/Linux use `SPY_TMP=$(mktemp -d)`; choose the platform equivalent on Windows.
+Do not reuse a global `/tmp/spy_reel.*` path because concurrent runs can overwrite each other.
+
 ### 4a. Download
 ```bash
-$YT_DLP "[url]" -o /tmp/spy_reel.mp4 --merge-output-format mp4 -q
+$YT_DLP "[url]" -o "$SPY_TMP/spy_reel.mp4" --merge-output-format mp4 -q
 ```
 Use the yt-dlp path from config.json.
 
 ### 4b. Transcribe (spoken hook)
 ```bash
-$WHISPER /tmp/spy_reel.mp4 --model base --output_format txt --output_dir /tmp/ --fp16 False
+$WHISPER "$SPY_TMP/spy_reel.mp4" --model base --output_format txt --output_dir "$SPY_TMP" --fp16 False
 ```
 Extract the first 1-3 sentences as the **spoken hook**.
 
 ### 4c. Screenshot (on-screen text hook)
 ```bash
-$FFMPEG -i /tmp/spy_reel.mp4 -vframes 1 -ss 00:00:01 /tmp/spy_thumb.png -y
+$FFMPEG -i "$SPY_TMP/spy_reel.mp4" -vframes 1 -ss 00:00:01 "$SPY_TMP/spy_thumb.png" -y
 ```
 Read the screenshot with vision to extract the **on-screen text hook**.
 
@@ -152,8 +165,11 @@ For each outlier, generate:
 
 ### 4f. Clean up
 ```bash
-rm -f /tmp/spy_reel.mp4 /tmp/spy_reel.txt /tmp/spy_thumb.png
+rm -rf "$SPY_TMP"
 ```
+
+Before cleanup, verify that `SPY_TMP` is a non-empty directory created for this run. Never expand a
+blank variable or remove a broad shared directory.
 
 ## Step 5 — Display Results
 
@@ -240,3 +256,11 @@ After showing results, ask:
 ---
 
 Built by [@tenfoldmarc](https://instagram.com/tenfoldmarc). Follow for daily AI automation builds — real systems, not theory.
+
+## Codex compatibility and upstream
+
+This Codex-compatible copy is maintained as a GitHub fork of
+`tenfoldmarc/spy-skill`, pinned initially from commit
+`6c1dd4dae7e6ff6238c35727e8ef8c6967f8373e`. The upstream repository contains no LICENSE file at
+that revision, so do not claim an open-source license or remove the upstream author attribution.
+See the repository-level `UPSTREAM.md` for the compatibility change summary.
