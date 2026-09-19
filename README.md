@@ -1,5 +1,5 @@
 # Spy
-### A Claude Code Skill by [@tenfoldmarc](https://www.instagram.com/tenfoldmarc)
+### A Claude Code and Codex Skill by [@tenfoldmarc](https://www.instagram.com/tenfoldmarc)
 
 Give it your competitors' Instagram handles and it tells you exactly what's working — which hooks went viral, why they worked, and gives you ready-to-use templates you can steal for your own content. No setup, no database, instant results.
 
@@ -31,6 +31,24 @@ Don't worry about connecting these manually — the skill walks you through ever
 ---
 
 ## Install
+
+### Codex on macOS
+
+```bash
+git clone https://github.com/JSNGe/spy-skill ~/.codex/skills/spy
+```
+
+Start a new Codex turn after installation so the skill catalog refreshes. Invoke it with:
+
+```text
+$spy @competitor1 @competitor2 @competitor3
+```
+
+The Codex-compatible fork changes the config path to `~/.codex/skills/spy/config.json`, discovers
+the Apify tools actually available in the current host instead of assuming Claude-specific MCP tool
+names, and uses an isolated temporary directory for downloaded Reels.
+
+### Claude Code
 
 ### Step 1 — Open your terminal
 
@@ -112,6 +130,12 @@ To get the latest version:
 cd ~/.claude/skills/spy && git pull
 ```
 
+For the Codex-compatible fork:
+
+```bash
+cd ~/.codex/skills/spy && git pull
+```
+
 ---
 
 ## Want More?
@@ -123,3 +147,14 @@ cd ~/.claude/skills/spy && git pull
 ## Built By
 
 [@tenfoldmarc](https://www.instagram.com/tenfoldmarc) — Follow for daily AI automation walkthroughs. Real systems, not theory.
+
+## Upstream and licensing note
+
+This repository is a GitHub fork of
+[`tenfoldmarc/spy-skill`](https://github.com/tenfoldmarc/spy-skill), initially based on commit
+`6c1dd4dae7e6ff6238c35727e8ef8c6967f8373e`. The upstream author and GitHub fork relationship are
+preserved.
+
+The upstream repository did not include a LICENSE file at that revision. Public source code without
+a license should not be described as open source or assumed to grant reuse rights beyond GitHub's
+fork functionality. No license has been invented or added here.
